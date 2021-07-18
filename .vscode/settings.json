@@ -2,4 +2,7 @@
     "[rust]": {
         "editor.defaultFormatter": "rust-lang.rust",
     },
+    "[toml]": {
+        "editor.defaultFormatter": "be5invis.toml"
+    }
 }

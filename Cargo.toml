@@ -1,16 +1,16 @@
 [package]
-name = "webhooks"
-version = "0.1.0"
-edition = "2018"
-description = "Webhook server"
 authors = ["Victor Gorchilov <victor@gorchilov.com>"]
+categories = ["web-programming::http-client", "filesystem"]
+description = "Webhook server"
+edition = "2018"
+keywords = ["webhooks"]
+license = "MIT"
+name = "webhooks"
 readme = "README.md"
 repository = "https://github.com/ManiacMaxo/webhooks/"
-license = "MIT"
-keywords = ["webhooks"]
-categories = ["web-programming::http-client", "filesystem"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = "0.1.0"
 
 [dependencies]
 clap = "2.33.3"
+serde = {version = "1.0", features = ["derive"]}
+serde_json = "1"

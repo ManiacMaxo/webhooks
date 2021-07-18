@@ -3,14 +3,12 @@
         "name": "request-query-param",
         "command": "./update.sh",
         "working-directory": "./",
-        "rule": {
-            "match": {
-                "type": "value",
-                "value": "some-token",
-                "parameter": {
-                    "source": "url",
-                    "name": "token"
-                }
+        "auth-rule": {
+            "type": "value",
+            "value": "some-token",
+            "parameter": {
+                "source": "url",
+                "name": "token"
             }
         }
     },
@@ -18,11 +16,9 @@
         "name": "authentication-header",
         "command": "./update.sh",
         "working-directory": "./",
-        "rule": {
-            "match": {
-                "type": "github",
-                "value": "some-token"
-            }
+        "auth-rule": {
+            "type": "github",
+            "value": "some-token"
         }
     }
 ]
