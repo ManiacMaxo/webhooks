@@ -1,5 +1,6 @@
 use clap::{App, Arg};
 
+#[derive(Debug)]
 pub struct Options {
     pub config_file: String,
     pub port: u16,

@@ -1,25 +1,21 @@
-use std::net::{SocketAddr, TcpListener};
-mod cli;
-mod config;
+mod utils;
 
 fn main() {
-    let options = cli::args();
+    let options = utils::cli::args();
+
+    println!("options: {:?}", options);
+
+    let config = utils::config::load_config(options.config_file).unwrap();
+    println!("{:?}", config);
+
+    let server = utils::server::Server::new(config, options.port);
 
     println!(
-        "options: {} {} {}",
-        options.config_file, options.port, options.watch
+        "Listening on http://{}",
+        server.listener.local_addr().unwrap()
     );
 
-    let conf = config::load_config(options.config_file).unwrap();
-    println!("{:?}", conf);
-
-    let listener = TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], options.port))).unwrap();
-
-    println!("Listening on http://{}", listener.local_addr().unwrap());
-
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
-
-        println!("Connection established! {:?}", stream);
+    for stream in server.listener.incoming() {
+        server.request_handler(stream.unwrap())
     }
 }
