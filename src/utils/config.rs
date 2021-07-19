@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use serde_json::from_reader;
+use serde_json::Value;
 use std::collections::HashMap;
 
 use std::fs::File;
-use std::io::{BufReader, Error, ErrorKind};
+use std::io::BufReader;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(non_camel_case_types)]
@@ -24,7 +25,7 @@ pub enum RuleSources {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Parameter {
-    pub name: String,
+    pub name: Value,
     pub source: RuleSources,
 }
 
@@ -54,24 +55,23 @@ pub struct Config {
 
 pub type ConfigMap = HashMap<String, Config>;
 
-pub fn load_config(path: String) -> Result<ConfigMap, Error> {
-    let file = File::open(path)?;
+pub fn load_config(path: String) -> Result<ConfigMap, &'static str> {
+    let file = File::open(path).expect("Cannot open config file");
     let reader = BufReader::new(file);
-    let json: Vec<Json> = from_reader(reader)?;
+    let json: Vec<Json> = from_reader(reader).expect("Cannot parse JSON");
     let mut config: ConfigMap = HashMap::new();
 
-    for config_item in &json {
+    for config_item in json {
         let auth_rule = config_item.auth_rule.as_ref().unwrap();
 
         match auth_rule.r#type {
             RuleTypes::value => {
                 if auth_rule.parameter.is_none() {
-                    return Err(Error::new(ErrorKind::NotFound, "No parameter for rule"));
+                    return Err("Some error message");
                 }
             }
             _ => {}
         }
-
         config.insert(
             config_item.name,
             Config {
