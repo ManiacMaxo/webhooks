@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::from_reader;
+use std::collections::HashMap;
 
 use std::fs::File;
 use std::io::{BufReader, Error, ErrorKind};
@@ -37,19 +38,29 @@ pub struct Rule {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub struct Config {
+pub struct Json {
     pub name: String,
     pub command: String,
     pub working_directory: String,
     pub auth_rule: Option<Rule>,
 }
 
-pub fn load_config(path: String) -> Result<Vec<Config>, Error> {
+#[derive(Debug)]
+pub struct Config {
+    pub command: String,
+    pub working_directory: String,
+    pub auth_rule: Option<Rule>,
+}
+
+pub type ConfigMap = HashMap<String, Config>;
+
+pub fn load_config(path: String) -> Result<ConfigMap, Error> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let config: Vec<Config> = from_reader(reader)?;
+    let json: Vec<Json> = from_reader(reader)?;
+    let mut config: ConfigMap = HashMap::new();
 
-    for config_item in &config {
+    for config_item in &json {
         let auth_rule = config_item.auth_rule.as_ref().unwrap();
 
         match auth_rule.r#type {
@@ -60,6 +71,16 @@ pub fn load_config(path: String) -> Result<Vec<Config>, Error> {
             }
             _ => {}
         }
+
+        config.insert(
+            config_item.name,
+            Config {
+                command: config_item.command,
+                working_directory: config_item.working_directory,
+                auth_rule: config_item.auth_rule,
+            },
+        );
     }
+
     return Ok(config);
 }
