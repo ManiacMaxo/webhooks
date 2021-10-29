@@ -1,69 +1,75 @@
-use crate::utils::config::ConfigMap;
-use httparse::{Header, Request, EMPTY_HEADER};
+use crate::utils::cli::args;
+use crate::utils::config::{load_config, Config, RuleSources};
+use hyper::{Body, Request, Response, StatusCode};
 use std::collections::HashMap;
-use std::io::prelude::*;
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::convert::Infallible;
 
-pub struct Server {
-    pub config: ConfigMap,
-    pub listener: TcpListener,
+pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let options = args();
+    let config = load_config(options.config_file).unwrap();
+    let mut response = Response::new(Body::empty());
+
+    match config.get(&req.uri().path()[1..]) {
+        Some(conf) => {
+            if check_auth(req, conf) {
+                *response.status_mut() = StatusCode::OK;
+            } else {
+                *response.status_mut() = StatusCode::UNAUTHORIZED;
+            }
+        }
+        None => {
+            *response.status_mut() = StatusCode::NOT_FOUND;
+        }
+    }
+    return Ok(response);
 }
 
-impl Server {
-    pub fn new(config: ConfigMap, addr: &SocketAddr) -> Server {
-        let listener = TcpListener::bind(addr).unwrap();
-
-        return Server {
-            config: config,
-            listener: listener,
-        };
+fn check_auth(req: Request<Body>, config: &Config) -> bool {
+    if config.auth_rule.is_none() {
+        return true;
     }
 
-    pub fn request_handler(&self, mut stream: TcpStream) {
-        println!("Connection established! {:?}", stream.local_addr());
+    let auth_rule = config.auth_rule.as_ref().unwrap();
+    let param = auth_rule.parameter.as_ref().unwrap();
 
-        // read the request
-        let mut buf = [0; 1024];
-        stream.read(&mut buf).expect("failed to read request");
-
-        let mut headers = [EMPTY_HEADER; 16];
-
-        let mut req = Request::new(&mut headers);
-        let res = req.parse(&buf).unwrap();
-
-        if res.is_partial() {
-            println!("request is not complete");
-            match req.path {
-                Some(ref path) => {
-                    // check path
-
-                    let conf = self.config.get(&path.to_string());
-                    println!("path: {:?} {:?}", path, conf);
-                }
-                None => {
-                    // must read more and parse again
-                }
+    match param.source {
+        RuleSources::header => {
+            let header = req.headers().get(param.name.as_str().unwrap());
+            if header.is_some() && header.unwrap() == &auth_rule.value {
+                return true;
             }
-        } else {
-            println!("request is complete: {:?}", self.parse_headers(req.headers));
+            return false;
         }
+        RuleSources::url => {
+            let query = parse_query(req.uri().query().unwrap());
 
-        // close the connection
-        let response = "HTTP/1.1 200 OK\r\n\r\n";
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
+            println!("{:?}", query);
+
+            match query.get(param.name.as_str().unwrap()) {
+                Some(value) => value == &auth_rule.value,
+                None => false,
+            }
+        }
+        RuleSources::body => return true, // Unimplemented
+    }
+}
+
+fn parse_query(query: &str) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for val in query.split('&') {
+        let mut pair = val.split('=');
+        map.insert(
+            pair.next().unwrap().to_string(),
+            pair.next().unwrap().to_string(),
+        );
     }
 
-    fn parse_headers(&self, headers: &[Header]) -> HashMap<String, String> {
-        let mut headers_map = HashMap::<String, String>::new();
+    return map;
+}
 
-        for header in headers {
-            headers_map.insert(
-                header.name.to_string(),
-                String::from_utf8(header.value.to_vec()).unwrap(),
-            );
-        }
-
-        return headers_map;
-    }
+pub async fn shutdown_signal() {
+    // Wait for the CTRL+C signal
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install CTRL+C signal handler");
 }

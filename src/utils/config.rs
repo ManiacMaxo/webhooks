@@ -46,7 +46,7 @@ pub struct Json {
     pub auth_rule: Option<Rule>,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub command: String,
     pub working_directory: String,

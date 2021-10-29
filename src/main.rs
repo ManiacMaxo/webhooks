@@ -1,17 +1,26 @@
+use hyper::service::{make_service_fn, service_fn};
+use hyper::Server;
+use std::convert::Infallible;
 use std::net::SocketAddr;
 
 mod utils;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let options = utils::cli::args();
     println!("options: {:?}", options);
-
-    let config = utils::config::load_config(options.config_file).unwrap();
     let addr = SocketAddr::from(([127, 0, 0, 1], options.port));
 
-    let server = utils::server::Server::new(config, &addr);
+    let make_svc = make_service_fn(|_conn| async {
+        // service_fn converts our function into a `Service`
+        Ok::<_, Infallible>(service_fn(utils::server::handler))
+    });
 
-    for stream in server.listener.incoming() {
-        server.request_handler(stream.unwrap())
+    let server = Server::bind(&addr).serve(make_svc);
+    let graceful = server.with_graceful_shutdown(utils::server::shutdown_signal());
+
+    // Run this server for... forever!
+    if let Err(e) = graceful.await {
+        eprintln!("server error: {}", e);
     }
 }
