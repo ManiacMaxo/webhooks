@@ -13,12 +13,15 @@ pub async fn handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         Some(conf) => {
             if check_auth(req, conf) {
                 *response.status_mut() = StatusCode::OK;
+                *response.body_mut() = Body::from("Ok");
             } else {
                 *response.status_mut() = StatusCode::UNAUTHORIZED;
+                *response.body_mut() = Body::from("Failed authorization rules");
             }
         }
         None => {
             *response.status_mut() = StatusCode::NOT_FOUND;
+            *response.body_mut() = Body::from("No matching hook found in config");
         }
     }
     return Ok(response);
@@ -33,16 +36,16 @@ fn check_auth(req: Request<Body>, config: &Config) -> bool {
     let param = auth_rule.parameter.as_ref().unwrap();
 
     match param.source {
-        RuleSources::header => {
-            let header = req.headers().get(param.name.as_str().unwrap());
-            if header.is_some() && header.unwrap() == &auth_rule.value {
-                return true;
-            }
-            return false;
-        }
+        RuleSources::header => match req.headers().get(param.name.as_str().unwrap()) {
+            Some(value) => value == &auth_rule.value,
+            None => false,
+        },
         RuleSources::url => {
-            let query = parse_query(req.uri().query().unwrap());
+            if req.uri().query().is_none() {
+                return false;
+            }
 
+            let query = parse_query(req.uri().query().unwrap());
             println!("{:?}", query);
 
             match query.get(param.name.as_str().unwrap()) {
