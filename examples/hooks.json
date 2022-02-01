@@ -13,12 +13,25 @@
         }
     },
     {
-        "name": "authentication-header",
+        "name": "github",
         "command": "./update.sh",
         "working-directory": "./",
         "auth-rule": {
             "type": "github",
             "value": "some-token"
+        }
+    },
+    {
+        "name": "authentication-header",
+        "command": "./update.sh",
+        "working-directory": "./",
+        "auth-rule": {
+            "type": "value",
+            "value": "some-token",
+            "parameter": {
+                "source": "header",
+                "name": "Authorization"
+            }
         }
     }
 ]

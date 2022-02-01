@@ -3,7 +3,7 @@ authors = ["Victor Gorchilov <victor@gorchilov.com>"]
 categories = ["web-programming::http-client", "filesystem"]
 description = "Webhook server"
 edition = "2018"
-keywords = ["webhooks"]
+keywords = ["webhooks", "http"]
 license = "MIT"
 name = "webhooks"
 readme = "README.md"
@@ -12,7 +12,9 @@ version = "0.1.0"
 
 [dependencies]
 clap = "2.33"
-hyper = {version = "0.14", features = ["server", "runtime", "http1"]}
+hmac = "0.11"
+hyper = {version = "0.14", features = ["server", "runtime", "http2"]}
 serde = {version = "1", features = ["derive"]}
 serde_json = "1"
+sha2 = "0.9"
 tokio = {version = "1", features = ["macros", "rt-multi-thread", "signal"]}

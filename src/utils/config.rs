@@ -43,6 +43,7 @@ pub struct Json {
     pub name: String,
     pub command: String,
     pub working_directory: String,
+    pub allowed_methods: Option<Vec<String>>,
     pub auth_rule: Option<Rule>,
 }
 
@@ -50,6 +51,7 @@ pub struct Json {
 pub struct Config {
     pub command: String,
     pub working_directory: String,
+    pub allowed_methods: Vec<String>,
     pub auth_rule: Option<Rule>,
 }
 
@@ -67,16 +69,20 @@ pub fn load_config(path: String) -> Result<ConfigMap, &'static str> {
         match auth_rule.r#type {
             RuleTypes::value => {
                 if auth_rule.parameter.is_none() {
-                    return Err("Some error message");
+                    return Err("Auth rule of type \"value\" requires parameter");
                 }
             }
             _ => {}
         }
+
         config.insert(
             config_item.name,
             Config {
                 command: config_item.command,
                 working_directory: config_item.working_directory,
+                allowed_methods: config_item
+                    .allowed_methods
+                    .unwrap_or(Vec::from(["GET".into(), "POST".into()])),
                 auth_rule: config_item.auth_rule,
             },
         );

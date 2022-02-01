@@ -13,7 +13,7 @@ pub fn args() -> Options {
 
     let config = Arg::with_name("config")
         .index(1)
-        .help("the config file to use");
+        .help("the json config file to use (defaults to hooks.json)");
 
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
